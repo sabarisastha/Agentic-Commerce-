@@ -1,0 +1,400 @@
+RAZORPAY AI BUILDATHONAI Growth & Agentic Commerce — Complete Project Blueprint
+Phase 1: AI Commerce Agent  |  Phase 2: Revenue Recovery Extension
+Purpose of this document
+This document converts Razorpay’s current official Agentic Commerce track statement into a practical engineering plan: what the track means, what we should build, where AI is actually used, what remains deterministic software, how payment authorization works, how to demonstrate safety and failure handling, and how Revenue Recovery can be added later without making Phase 1 unmanageably large.
+Important distinction: Razorpay’s requirements are quoted/paraphrased from the official Buildathon page. The architecture, product scope, tools, metrics, and implementation sequence below are our proposed strategy—not additional official Razorpay requirements.
+1. Official Buildathon Context
+Razorpay describes the program as a student-only route to AI Builder Intern opportunities. The current official page says participants should pick a track, build something real, and show a public repository, a 5-minute pitch video, and the architecture. It also states that shortlisted builders go directly to a panel, without an aptitude test or group discussion. cite source note omitted from document; see source link below.
+Current official source: https://razorpay.com/buildathon/
+2. The Exact Track We Chose
+Official track: “01 — AI Growth & Agentic Commerce”
+Razorpay’s track statement:
+“Grow the merchant’s revenue, and make them sellable to AI buyers.”
+The page asks builders to either build an agent that grows revenue for a merchant using Razorpay test-mode APIs, or make a merchant transactable by an AI buyer end to end.
+Razorpay’s example directions include:
+Conversational in-app checkout
+Agent-readable catalog
+Upsell & cross-sell agent
+Campaign orchestrator
+The stated bar is critical:
+“Every money action explainable, bounded and gated. Show the audit trail and one failure handled gracefully.”
+3. Translate the Track Into Plain English
+Razorpay wording
+What it means for us
+Grow merchant revenue
+Give the merchant a mechanism that can increase conversion or order value, such as relevant cross-sell recommendations.
+Sellable to AI buyers
+Expose product/merchant information in a structured, AI-readable form so an AI buyer can discover, understand and transact.
+Agent
+An LLM-driven decision layer that can interpret goals, choose tools, observe results and decide the next step.
+Test-mode APIs
+Use sandbox/test transactions rather than real money for the buildathon prototype.
+Money action explainable
+Explain why a product/payment action was selected and show the amount and relevant reasoning.
+Bounded
+Enforce hard rules outside the LLM: spending limits, allowed tools, retry limits, product/price validation, etc.
+Gated
+Require explicit user authorization before a financial action.
+Audit trail
+Persist important agent decisions, tool calls, approvals, payment states and failures.
+One failure handled gracefully
+Demonstrate at least one realistic failure path and show safe recovery rather than a crash or silent retry.
+4. Our Core Project Vision
+Proposed Phase 1 project:
+A trusted AI commerce agent that understands a user's natural-language shopping goal, discovers products from an AI-readable merchant catalog, compares and recommends suitable products, prepares a cart and checkout, increases merchant revenue through contextual cross-sell, and executes payment only after explicit user authorization.
+The system will not depend on Amazon/Flipkart scraping. We will create our own merchant catalog and expose it through controlled APIs. This makes the prototype stable, testable, reproducible and suitable for a sandbox payment flow.
+5. What We Are NOT Building
+We are not scraping Amazon, Flipkart, Myntra or other marketplaces as the foundation of the system.
+We are not moving real customer money.
+We are not giving the LLM direct database credentials.
+We are not allowing the LLM to silently authorize a payment.
+We are not building a general-purpose autonomous shopping agent for every website.
+We are not trying to train a large language model from scratch.
+We are not making every part of the system AI-powered; deterministic software should handle deterministic operations.
+6. The Central Architectural Idea: Hybrid AI + Normal Software
+The most important mental model:
+USER
+The LLM does not directly perform the real-world action. It requests a tool. Our backend executes the tool after validation and policy checks. The result is returned to the agent, which can then decide what to do next.
+7. What Part Is Actually AI?
+Function
+AI/Agent
+Deterministic software
+Understand natural-language shopping request
+✓
+
+Extract budget, category, preferences
+✓
+
+Search database
+
+✓
+Validate query parameters
+
+✓
+Check price/stock
+
+✓
+Compare and explain candidates
+✓
+
+Recommend product
+✓
+✓ can enforce hard constraints
+Create cart
+
+✓
+Calculate final amount
+
+✓
+Ask for payment approval
+
+✓
+Execute payment
+
+✓
+Verify payment status
+
+✓
+Explain a failure
+✓
+
+Write audit log
+
+✓
+This hybrid design is intentional. AI handles ambiguity, natural language, reasoning and adaptive decisions. Reliable backend code handles money, database access, validation, state transitions and security.
+8. Merchant Catalog Design
+We create our own synthetic but realistic merchant catalog. Example:
+{
+The catalog should be AI-readable: structured fields, stable IDs, current price, current stock, attributes, categories, tags and relationships. The backend exposes safe product APIs rather than exposing the database directly to the LLM.
+9. Example Product APIs / Tools
+Tool
+Purpose
+search_products()
+Find catalog products matching structured constraints.
+get_product_details()
+Return authoritative product information.
+check_inventory()
+Verify current stock before checkout.
+get_current_price()
+Verify the current price before financial action.
+create_cart()
+Create a server-side cart.
+add_to_cart()
+Add a selected product and quantity.
+calculate_total()
+Compute the authoritative order total.
+create_checkout()
+Prepare a checkout/payment request.
+request_user_authorization()
+Gate a money action behind explicit user approval.
+create_payment()
+Execute the permitted test-mode payment action.
+verify_payment()
+Verify the final payment state.
+write_audit_event()
+Persist important events and decisions.
+10. How Intent Understanding Works
+Example user request:
+“I need a laptop under ₹70,000 with 16GB RAM for programming. I prefer something lightweight.”
+The LLM converts the natural-language request into structured intent:
+{
+The backend validates these fields and performs the actual database query. The LLM is not trusted as the source of truth for price or stock.
+11. Filtering vs Ranking vs Reasoning
+Hard constraints should be deterministic.
+price <= 70000
+Soft preferences can be used for ranking/recommendation. For example, lightweight + programming + good battery may be considered when several products satisfy the hard constraints.
+The agent can then explain its recommendation:
+“I recommend Product A because it satisfies your ₹70,000 budget and 16GB requirement while being lighter than the other matching options.”
+We do not need to train a traditional ML model just to demonstrate this. An LLM can perform intent extraction and recommendation reasoning, while the backend enforces hard constraints.
+12. Tool / Function Calling
+Tool calling is the bridge between the LLM and our real system.
+Conceptual sequence:
+User:
+The key idea: the LLM chooses a tool; the backend executes it. The LLM does not get direct database or payment access.
+13. Agent Loop
+1. Receive user goal
+This loop is what separates an agentic workflow from a simple chatbot that only generates text.
+14. End-to-End Phase 1 User Journey
+User tells the agent what they want in natural language.
+Agent extracts intent, hard constraints and soft preferences.
+Agent calls search_products().
+Backend validates the query and searches the merchant catalog.
+Agent receives results and compares them.
+Agent recommends one or more products with reasons.
+Agent may offer one relevant cross-sell item to increase merchant revenue.
+User selects a product.
+Backend verifies current price and stock.
+Agent creates/prepares the cart.
+Backend calculates the authoritative total.
+Agent presents the final amount and requests explicit payment authorization.
+If user rejects, the payment request is cancelled/expired and no charge is attempted.
+If user approves, backend creates the allowed test-mode payment action.
+Payment status is verified.
+Success produces an order confirmation.
+Failure enters the controlled failure-handling path.
+All important events are recorded in the audit trail.
+15. Payment State Machine
+PRODUCT_SELECTED
+Important: rejecting a payment before execution is not the same as refunding a payment that already succeeded. A successful payment would require a separate refund workflow.
+16. Security / Safety Model
+Three authority levels:
+Level
+Agent capability
+Approval
+Read
+Search products, read details, check availability
+Not required
+Prepare
+Compare, recommend, create cart, prepare checkout
+Not required for preparation
+Financial action
+Execute payment
+Explicit user authorization required
+Recommended hard rules:
+Payment amount must come from the authoritative backend calculation.
+LLM cannot change the user's spending limit.
+LLM cannot bypass user authorization.
+LLM cannot invent a product, price or stock value.
+Retry count must be limited.
+Payment status must be verified server-side.
+Duplicate payment attempts must be prevented.
+Sensitive actions must be logged.
+17. Audit Trail
+Example:
+10:30:01 USER_REQUEST
+18. Graceful Failure Demonstration
+We should deliberately demonstrate at least one failure in the sandbox/test environment.
+Example: payment failure.
+User approves ₹4,898 payment
+Other useful controlled failures for testing: product goes out of stock before checkout, price changes before payment, user rejects payment, payment remains pending, or a tool/API times out.
+19. Revenue Growth Feature for Phase 1
+To satisfy the merchant-revenue side of the track, our first practical growth feature should be contextual cross-sell.
+Example:
+User buys:
+The recommendation should be relevant, limited and explainable. We should avoid turning the agent into a spam engine.
+20. Phase 1 MVP Scope
+The minimum strong demo should include:
+One synthetic merchant.
+A realistic catalog with enough products to make search/recommendation meaningful.
+Natural-language intent extraction.
+Product search tool.
+Product comparison/recommendation.
+At least one contextual cross-sell capability.
+Cart creation.
+Price and stock verification.
+Conversational checkout.
+Razorpay test-mode payment flow.
+Explicit user authorization gate.
+Audit trail.
+At least one graceful failure scenario.
+A small evaluation suite with measurable results.
+21. What We Should NOT Add to Phase 1
+Multi-marketplace scraping.
+Real-money payments.
+Hundreds of autonomous tools.
+Complex multi-agent architecture unless a real need appears.
+A custom-trained LLM.
+Unnecessary computer-vision or voice features.
+Revenue Recovery before the basic purchase loop works.
+Campaign orchestration unless the core system is already stable.
+22. Phase 1 Architecture
+                         USER
+23. Suggested Technology Stack
+Layer
+Suggested choice
+Reason
+Frontend
+React / Vite
+Fast interactive demo UI.
+Backend
+Python + FastAPI
+Simple APIs and good AI integration.
+Database
+PostgreSQL
+Structured catalog/order/payment state.
+Agent/LLM
+LLM with tool/function calling
+Intent, reasoning and tool selection.
+Validation
+Pydantic + backend rules
+Strong typed tool inputs.
+Payment
+Razorpay Test Mode
+Sandboxed payment demonstration.
+Audit
+PostgreSQL event table
+Queryable trace of agent actions.
+Testing
+Pytest + scenario dataset
+Repeatable evaluation.
+Framework choice can change later. We should first understand and implement the agent loop before adding a heavy agent framework.
+24. Example Tool Schema Concept
+search_products(
+25. Evaluation Plan
+We should not rely on a single successful demo. Build a small test suite.
+Scenario
+Expected behavior
+Valid product request
+Correct products returned.
+Budget constraint
+No final recommendation violates the hard budget.
+No matching product
+Agent says no match and asks whether constraints may be relaxed.
+Stock unavailable
+Agent does not proceed with unavailable product.
+Price changes
+Backend rechecks price before payment.
+User rejects payment
+No payment execution.
+User approves payment
+Allowed test payment is created.
+Payment failure
+No duplicate charge; graceful recovery message.
+Repeated retry
+Retry limit stops repeated attempts.
+Cross-sell
+Recommendation is relevant and not excessive.
+Potential metrics:
+Intent extraction accuracy on a labeled set.
+Hard-constraint compliance rate.
+Product recommendation success rate.
+Cross-sell acceptance rate on test scenarios.
+Payment authorization enforcement rate.
+Unauthorized payment attempts blocked.
+Duplicate payment attempts prevented.
+Failure-handling success rate.
+Average end-to-end task completion time.
+26. Phase 2 — Revenue Recovery Extension
+After Phase 1 is stable, we will add Revenue Recovery as a second capability rather than starting with two separate projects.
+Revenue Recovery means detecting revenue at risk, diagnosing the reason, choosing a bounded intervention, and attempting recovery with stopping rules and an audit trail.
+Razorpay's current Revenue Recovery track describes examples including payment degradation → root cause → recovery action, checkout drop-off recovery, failed-subscription recovery, B2B receivables chasing, mandate retry sequencing, Hinglish voice recovery and promise-to-pay tracking. The stated bar is measured money recovered across a batch, compliant escalation, stopping rules and an audit trail.
+Our Phase 2 integration:
+                 COMMERCE AGENT
+Important: Revenue Recovery must not become uncontrolled payment retrying. Every intervention needs limits, authorization rules, cooldowns and a terminal stop condition.
+27. Phase 2 Metrics
+Revenue at risk detected.
+Recovery attempts.
+Successful recovery rate.
+Amount recovered.
+Average recovery time.
+Retry success rate.
+Unnecessary retry rate.
+Escalation rate.
+Number of cases stopped by stopping rules.
+For the Phase 2 evaluation, use a synthetic batch of failed/abandoned transactions and compare the baseline outcome with the agent's bounded recovery workflow.
+28. Final Product Architecture After Phase 2
+                         USER
+29. Recommended Build Order
+Understand LLM tool/function calling.
+Build the merchant catalog and database schema.
+Build product APIs without AI.
+Build a simple chat interface.
+Connect the LLM to search_products().
+Implement intent extraction and tool calling.
+Implement product comparison/recommendation.
+Add cart and deterministic price calculation.
+Add stock and price revalidation.
+Add conversational checkout.
+Integrate Razorpay test-mode payment.
+Add explicit authorization gate.
+Add payment verification.
+Add audit logging.
+Add one controlled failure scenario.
+Add contextual cross-sell.
+Create an evaluation dataset and metrics.
+Polish the demo and public repository.
+Only after Phase 1 is stable, begin Revenue Recovery.
+30. Demo Story
+A strong demo should tell one coherent story instead of showing random features.
+USER:
+This single story demonstrates AI reasoning, tools, commerce, revenue growth, authorization, payment, failure handling and auditability.
+31. Public GitHub Repository Structure
+razorpay-agentic-commerce/
+32. README / Pitch Must Explain
+What merchant problem we solve.
+Why an AI agent is useful instead of a normal search/checkout flow.
+How the agent uses tools.
+How the merchant catalog is made AI-readable.
+How the agent grows revenue through contextual cross-sell.
+How payment authorization is gated.
+How hard constraints are enforced outside the LLM.
+How audit logging works.
+Which failure scenario was tested.
+What metrics we measured.
+What is synthetic/test data and what is not.
+What would be required to move from sandbox to production.
+33. Questions We Should Be Able to Answer in the Panel
+Why is this an agent rather than a chatbot?
+Which decisions are made by the LLM?
+Which decisions are deterministic?
+Why doesn't the LLM access the database directly?
+How do you prevent hallucinated prices?
+How do you prevent unauthorized payment?
+What happens if the price changes after recommendation?
+What happens if stock disappears before checkout?
+How do you prevent duplicate payment?
+What happens when payment fails?
+How does your system grow merchant revenue?
+Why did you choose cross-sell as the first growth feature?
+How did you evaluate the agent?
+What are the limitations of your synthetic catalog?
+How would you integrate real merchant catalogs in production?
+How would Revenue Recovery fit into the architecture?
+34. Our Core Engineering Principles
+AI proposes; trusted software validates and executes.
+The database is the source of truth for product, price and stock.
+The payment system is the source of truth for payment status.
+Never trust an LLM-generated amount as the authoritative payment amount.
+Financial actions require explicit authorization.
+Every sensitive action is auditable.
+Retries have limits and stopping conditions.
+Failure handling is designed before the happy path is declared complete.
+Measure the system instead of relying only on a successful demo.
+Keep Phase 1 small enough to finish exceptionally well.
+35. Final Mental Model
+                 AGENTIC COMMERCE
+One-sentence project definition
+We are building a trusted AI commerce agent that turns natural-language shopping goals into controlled commerce actions: it discovers products from an AI-readable merchant catalog, reasons over user requirements, recommends and cross-sells, prepares checkout, and performs a sandbox payment only after explicit user authorization, while every financial action is bounded, explainable, auditable and failure-aware.
+36. Source and Verification Note
+The official Razorpay Buildathon page is the authoritative source for the current track wording and stated bar. The project plan in this document is our engineering interpretation and proposed implementation strategy.
+Official source: https://razorpay.com/buildathon/
