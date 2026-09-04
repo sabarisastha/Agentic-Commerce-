@@ -108,6 +108,10 @@ The actual Razorpay Checkout overlay — test mode clearly flagged — confirmin
 ![Merchant dashboard](./screenshots/09-merchant-dashboard.png)
 Real-time metrics aggregated directly from the Orders, State Machine, and Audit Trail — AI-assisted revenue, average order value, bundle uptake, and a live security intervention count (**12 interventions, zero unauthorized bypasses**) — reframing the product from "shopping chatbot" to a measurable merchant revenue tool.
 
+### 10. Razorpay Dashboard — Independent Cross-Verification
+![Razorpay dashboard proof](./screenshots/10-razorpay-dashboard-proof.png)
+The same transaction, viewed directly from Razorpay's own merchant dashboard (test mode) — **Payment ID `pay_TXxRSs9znKggjY`** and **Order ID `order_TXxQ3TSSwtUI4Y`** match exactly with the entries logged in our own [audit trail](#7-full-agent-audit-trail) (screenshot 7). This isn't just an internal log claiming success — it's independently confirmed by Razorpay's own system of record, with the full authorization → capture timeline and fee breakdown. This is the strongest single proof point in this document: two independent systems, one real transaction, matching IDs.
+
 ---
 
 ## 💡 The Pitch
